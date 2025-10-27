@@ -33,3 +33,54 @@ require("lazy").setup({
   -- automatically check for plugin updates
   checker = { enabled = true },
 })
+--- i proabbly shoul de couple bellow this line into config.keymaps & config.wsl funcs etc...but fuck it 
+-- fuck windows wsl I need to fix this on new laptop when I get time to set it up... but this keybind will delete the ^M that is pasted after I paste. I know this if from line 70-eof will fix on new machine I need to built features 
+--this FW(fuck windows) command is to delete the last charchters on a every line of a selected visual block of code 
+vim.api.nvim_set_keymap('n', 'FW', ':'<,'>normal $x')
+-- WQ = :wq
+vim.api.nvim_set_keymap('n', 'WQ', ':wq!<CR>', { noremap = true, silent = true })
+-- WW = write no quit 
+vim.api.nvim_set_keymap('n', 'WW', ':w!<CR>', { noremap = true, silent = true })
+-- QQ = q!
+vim.api.nvim_set_keymap('n', 'QQ', ':q!<CR>', { noremap = true, silent = true })
+-- U = ctrl r (REDO)
+vim.api.nvim_set_keymap('n', 'U', '<C-r>', { noremap = true, silent = true })
+-- noremap U <Cmd>redo<CR>
+-- Map <leader>y to write selected text to clipboard
+--vim.api.nvim_set_keymap('w', '<leader>y', ":'<,'>w !clip.exe<CR>", { noremap = true, silent = true })
+
+-- Telescope conf 
+local builtin = require('telescope.builtin')                                        
+vim.keymap.set('n', '<leader>ff', builtin.find_files, { desc = 'Telescope find files' })      
+vim.keymap.set('n', '<leader>fg', builtin.live_grep, { desc = 'Telescope live grep' })
+vim.keymap.set('n', '<leader>fb', builtin.buffers, { desc = 'Telescope buffers' })
+vim.keymap.set('n', '<leader>fh', builtin.help_tags, { desc = 'Telescope help tags' })
+-- pyright 
+vim.lsp.enable('basedpyright')
+-- tree sitter 
+require("lazy").setup({
+  {"nvim-treesitter/nvim-treesitter", branch = 'master', lazy = false, build = ":TSUpdate"}
+})
+
+-- Use Windows clipboard from WSL via clip.exe / PowerShell
+if vim.fn.executable("clip.exe") == 1 then
+  vim.g.clipboard = {
+    name = "WslClipboard",
+    copy = {
+      ["+"] = "clip.exe",
+      ["*"] = "clip.exe",
+    },
+    paste = {
+      ["+"] = "powershell.exe -NoProfile -Command \"Get-Clipboard | Out-String -Stream | ForEach-Object { $_ -replace '\\r', '' }\"",
+      ["*"] = "powershell.exe -NoProfile -Command \"Get-Clipboard | Out-String -Stream | ForEach-Object { $_ -replace '\\r', '' }\"",
+      ["+"] = "powershell.exe -NoProfile -Command Get-Clipboard",
+      ["*"] = "powershell.exe -NoProfile -Command Get-Clipboard",
+    },
+    cache_enabled = 0,
+  }
+  -- Send all yanks/deletes to the system clipboard by default
+  vim.opt.clipboard = "unnamedplus"
+end
+
+
+
