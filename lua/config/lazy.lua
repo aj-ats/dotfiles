@@ -50,6 +50,8 @@ vim.api.nvim_set_keymap('n', 'U', '<C-r>', { noremap = true, silent = true })
 --vim.api.nvim_set_keymap('w', '<leader>y', ":'<,'>w !clip.exe<CR>", { noremap = true, silent = true })
 -- jq keymap you ned install jq but who does not
 vim.api.nvim_set_keymap('v', 'jq', ':%!jq .<CR>', { noremap = true, silent = true })
+-- string jq
+vim.api.nvim_set_keymap('v', 'sjq', ':%!jq -c .<CR>', { noremap = true, silent = true })
 -- Telescope conf 
 local builtin = require('telescope.builtin')                                        
 vim.keymap.set('n', '<leader>ff', builtin.find_files, { desc = 'Telescope find files' })      
