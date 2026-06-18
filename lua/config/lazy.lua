@@ -48,13 +48,15 @@ vim.api.nvim_set_keymap('n', 'U', '<C-r>', { noremap = true, silent = true })
 -- noremap U <Cmd>redo<CR>
 -- Map <leader>y to write selected text to clipboard
 --vim.api.nvim_set_keymap('w', '<leader>y', ":'<,'>w !clip.exe<CR>", { noremap = true, silent = true })
-
+-- jq keymap you ned install jq but who does not
+vim.api.nvim_set_keymap('v', 'jq', ':%!jq .<CR>', { noremap = true, silent = true })
 -- Telescope conf 
 local builtin = require('telescope.builtin')                                        
 vim.keymap.set('n', '<leader>ff', builtin.find_files, { desc = 'Telescope find files' })      
 vim.keymap.set('n', '<leader>fg', builtin.live_grep, { desc = 'Telescope live grep' })
 vim.keymap.set('n', '<leader>fb', builtin.buffers, { desc = 'Telescope buffers' })
 vim.keymap.set('n', '<leader>fh', builtin.help_tags, { desc = 'Telescope help tags' })
+
 -- pyright 
 vim.lsp.enable('basedpyright')
 -- tree sitter 
@@ -82,5 +84,23 @@ if vim.fn.executable("clip.exe") == 1 then
   vim.opt.clipboard = "unnamedplus"
 end
 
+--[[ this is whats currenlty in my confifg.. uptop windows cliboard idk why i switched. both fucking dont work 
+if vim.fn.executable("clip.exe") == 1 then
+        -- Existing: Copy yanks to Windows clipboard
+        vim.api.nvim_create_autocmd("TextYankPost", {
+                group = vim.api.nvim_create_augroup("WslYank", { clear = true }),
+                callback = function()
+                        if vim.v.event.operator == "y" then
+                                local text = vim.fn.getreg('"')
+                                -- Convert LF → CRLF so Windows apps display lines correctly
+                                local crlf_text = text:gsub("\n", "\r\n")
+                                vim.fn.system("clip.exe", crlf_text)
+                        end
+                end,
+        })
+
+        vim.opt.clipboard = "unnamedplus"
+end
+]]
 
 
