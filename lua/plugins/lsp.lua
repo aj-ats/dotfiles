@@ -15,8 +15,11 @@ return {
     },
   },
   config = function()
-    require("lspconfig").lua_ls.setup {}
-    require("lspconfig").pyright.setup{}
+      vim.lsp.enable('lua_ls')
+      vim.lsp.enable('pyright')
+      vim.lsp.enable('basedpyright')
+--    require("lspconfig").lua_ls.setup {}
+--    require("lspconfig").pyright.setup{}
 --    require("lspconfig").ts_ls.setup{}
     vim.lsp.enable('basedpyright')
     vim.lsp.config('ts_ls', {
