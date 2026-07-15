@@ -73,6 +73,33 @@ return {
 			preview.win, preview.buf, preview.path = nil, nil, nil
 		end
 
+		--- Scroll the preview window without leaving the tree (focus stays on tree).
+		--- @param direction "down"|"up"
+		--- @param amount? integer lines; nil = half of preview window height (like Ctrl-d/u)
+		local function scroll_preview(direction, amount)
+			if not preview.win or not vim.api.nvim_win_is_valid(preview.win) then
+				return
+			end
+			local win = preview.win
+			local height = vim.api.nvim_win_get_height(win)
+			local step = amount or math.max(1, math.floor(height / 2))
+			if direction == "up" then
+				step = -step
+			end
+
+			local buf = vim.api.nvim_win_get_buf(win)
+			local line_count = vim.api.nvim_buf_line_count(buf)
+			local cur = vim.api.nvim_win_get_cursor(win)
+			local new_row = math.max(1, math.min(line_count, cur[1] + step))
+			pcall(vim.api.nvim_win_set_cursor, win, { new_row, 0 })
+
+			-- Keep the scrolled line near the top of the preview (readable "page")
+			local top = math.max(1, new_row - math.floor(height / 4))
+			pcall(vim.api.nvim_win_call, win, function()
+				vim.fn.winrestview({ topline = top, lnum = new_row, leftcol = 0 })
+			end)
+		end
+
 		local function is_probably_binary(path)
 			local f = io.open(path, "rb")
 			if not f then
@@ -181,6 +208,12 @@ return {
 			vim.bo[preview.buf].modifiable = false
 			vim.bo[preview.buf].readonly = true
 			preview.path = path
+
+			-- reset scroll to top when switching files
+			pcall(vim.api.nvim_win_set_cursor, preview.win, { 1, 0 })
+			pcall(vim.api.nvim_win_call, preview.win, function()
+				vim.fn.winrestview({ topline = 1, lnum = 1, leftcol = 0 })
+			end)
 
 			-- title with filename
 			local name = vim.fn.fnamemodify(path, ":t")
@@ -323,6 +356,31 @@ return {
 				vim.keymap.set("n", "<Tab>", function()
 					preview_node_under_cursor()
 				end, opts("Hover preview"))
+
+				-- Scroll PREVIEW (not the tree). Focus stays on the file list.
+				vim.keymap.set("n", "<C-d>", function()
+					scroll_preview("down")
+				end, opts("Preview half-page down"))
+				vim.keymap.set("n", "<C-u>", function()
+					scroll_preview("up")
+				end, opts("Preview half-page up"))
+				-- Full page + line-step alternatives
+				vim.keymap.set("n", "<C-f>", function()
+					if preview.win and vim.api.nvim_win_is_valid(preview.win) then
+						scroll_preview("down", vim.api.nvim_win_get_height(preview.win))
+					end
+				end, opts("Preview page down"))
+				vim.keymap.set("n", "<C-b>", function()
+					if preview.win and vim.api.nvim_win_is_valid(preview.win) then
+						scroll_preview("up", vim.api.nvim_win_get_height(preview.win))
+					end
+				end, opts("Preview page up"))
+				vim.keymap.set("n", "<C-e>", function()
+					scroll_preview("down", 3)
+				end, opts("Preview scroll down"))
+				vim.keymap.set("n", "<C-y>", function()
+					scroll_preview("up", 3)
+				end, opts("Preview scroll up"))
 			end,
 		})
 
