@@ -129,6 +129,7 @@ vim.keymap.set('n', '<leader>fn', function()
 		hidden = true,
 	})
 end, { desc = 'Find all files in a dir' })
+-- File tree keybind lives in lua/plugins/nvim-tree.lua (lazy keys)
 --vim.keymap.set('n', '<leader>fn', builtin.lsp_workspace_symbols {}
 -- pyright
 
