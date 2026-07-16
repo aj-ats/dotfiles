@@ -130,15 +130,12 @@ vim.keymap.set('n', '<leader>fn', function()
 	})
 end, { desc = 'Find all files in a dir' })
 -- File tree keybind lives in lua/plugins/nvim-tree.lua (lazy keys)
---vim.keymap.set('n', '<leader>fn', builtin.lsp_workspace_symbols {}
--- pyright
+-- LSP servers + keymaps live in lua/plugins/lsp.lua (do not enable here — avoids doubles)
 
-vim.lsp.enable('basedpyright')
-
--- tree sitter
-require("lazy").setup({
-	{ "nvim-treesitter/nvim-treesitter", branch = 'master', lazy = false, build = ":TSUpdate" }
-})
+-- tree sitter (NOTE: second require("lazy").setup is unsupported; prefer a plugins/*.lua entry)
+-- require("lazy").setup({
+-- 	{ "nvim-treesitter/nvim-treesitter", branch = 'master', lazy = false, build = ":TSUpdate" }
+-- })
 
 if vim.fn.executable("clip.exe") == 1 then
 	-- Existing: Copy yanks to Windows clipboard
