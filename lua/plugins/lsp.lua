@@ -1,17 +1,18 @@
 return {
+	-- Lua-only helper; keep separate so it never loads with general LSP setup.
 	{
-		"neovim/nvim-lspconfig",
-		dependencies = {
-			{
-				"folke/lazydev.nvim",
-				ft = "lua",
-				opts = {
-					library = {
-						{ path = "${3rd}/luv/library", words = { "vim%.uv" } },
-					},
-				},
+		"folke/lazydev.nvim",
+		ft = "lua",
+		opts = {
+			library = {
+				{ path = "${3rd}/luv/library", words = { "vim%.uv" } },
 			},
 		},
+	},
+	{
+		"neovim/nvim-lspconfig",
+		-- Defer until you actually open a file (biggest startup win after telescope).
+		event = { "BufReadPre", "BufNewFile" },
 		config = function()
 			-- Built-in completion menu behavior (nvim 0.11+)
 			vim.opt.completeopt = { "menu", "menuone", "noselect", "popup" }
@@ -19,10 +20,10 @@ return {
 			-- Signs / underlines for errors (IntelliSense red squiggles)
 			vim.diagnostic.config({
 				virtual_text = { spacing = 2, prefix = "●" },
-				severity = true,
+				signs = true,
 				underline = true,
 				update_in_insert = false,
-				severity = { border = "rounded", source = true },
+				float = { border = "rounded", source = true },
 			})
 
 			-- Keymaps + completion when an LSP attaches to a buffer
@@ -39,8 +40,6 @@ return {
 						vim.keymap.set(mode, lhs, rhs, { buffer = bufnr, silent = true, desc = desc })
 					end
 
-					-- Hover docs (VS Code "peek type / docs")
-					-- Default neovim maps K; we also map Ctrl-k because that's what you tried.
 					map("n", "K", function()
 						vim.lsp.buf.hover({ border = "rounded", max_width = 80, max_height = 20 })
 					end, "LSP: hover docs")
@@ -48,7 +47,6 @@ return {
 						vim.lsp.buf.hover({ border = "rounded", max_width = 80, max_height = 20 })
 					end, "LSP: hover docs")
 
-					-- Signature help while writing a call: foo(|)
 					map("i", "<C-s>", function()
 						vim.lsp.buf.signature_help({ border = "rounded" })
 					end, "LSP: signature help")
@@ -56,18 +54,15 @@ return {
 						vim.lsp.buf.signature_help({ border = "rounded" })
 					end, "LSP: signature help")
 
-					-- Navigation
 					map("n", "gd", vim.lsp.buf.definition, "LSP: go to definition")
 					map("n", "gD", vim.lsp.buf.declaration, "LSP: go to declaration")
 					map("n", "gi", vim.lsp.buf.implementation, "LSP: implementations")
 					map("n", "gr", vim.lsp.buf.references, "LSP: references")
 					map("n", "gy", vim.lsp.buf.type_definition, "LSP: type definition")
 
-					-- Refactor / actions
 					map("n", "<leader>rn", vim.lsp.buf.rename, "LSP: rename")
 					map({ "n", "v" }, "<leader>ca", vim.lsp.buf.code_action, "LSP: code action")
 
-					-- Diagnostics
 					map("n", "[d", function()
 						vim.diagnostic.jump({ count = -1, float = true })
 					end, "Prev diagnostic")
@@ -76,10 +71,9 @@ return {
 					end, "Next diagnostic")
 					map("n", "<leader>d", vim.diagnostic.open_float, "Line diagnostics")
 
-					-- Built-in LSP completion (no nvim-cmp needed)
 					if client:supports_method("textDocument/completion") then
 						vim.lsp.completion.enable(true, client.id, bufnr, {
-							autotrigger = true, -- popup as you type
+							autotrigger = true,
 						})
 					end
 				end,
@@ -87,15 +81,15 @@ return {
 
 			-- Language servers (on PATH). Enable only here — not in lazy.lua / init.lua.
 			-- Python: basedpyright only (do not also enable pyright).
-			-- JS/TS/Vue: ts_ls. Lua: lua_ls.
+			-- JS/TS/Vue: ts_ls. Lua: lua_ls. Docker: dockerls.
 			vim.lsp.config("lua_ls", {
 				settings = {
 					Lua = {
 						runtime = { version = "LuaJIT" },
-						workspace = {
-							checkThirdParty = false,
-							library = vim.api.nvim_get_runtime_file("", true),
-						},
+						-- Do NOT set workspace.library = nvim_get_runtime_file(...) —
+						-- that walks the entire runtime on every lua buffer and is very slow.
+						-- lazydev.nvim supplies the vim API library when editing lua.
+						workspace = { checkThirdParty = false },
 						diagnostics = { globals = { "vim" } },
 						telemetry = { enable = false },
 					},
@@ -117,13 +111,70 @@ return {
 					"vue",
 				},
 			})
-
-			vim.lsp.enable({
-				"lua_ls",
-				"basedpyright",
-				"ts_ls",
+			vim.lsp.config("sqlls", {
+				cmd = { "sql-language-server", "up", "--method", "stdio" },
+				filetypes = { "sql", "mysql", "tsql" },
+				root_markers = { ".sqllsrc.json" },
 			})
 
+			vim.filetype.add({
+				extension = {
+					tsql = "tsql",
+				},
+			})
+
+			-- Only enable servers whose binary is actually on PATH.
+			-- Broken/missing binaries still get spawned, crash, and stick open/quit.
+			local function has_bin(name)
+				return vim.fn.executable(name) == 1
+			end
+
+			-- basedpyright-langserver can exist as a broken stub (ModuleNotFoundError).
+			-- Cheap FS check only — never spawn python (cold start is slow on WSL).
+			local function basedpyright_ok()
+				if not has_bin("basedpyright-langserver") and not has_bin("basedpyright") then
+					return false
+				end
+				local bin = vim.fn.exepath("basedpyright-langserver")
+				if bin == "" then
+					bin = vim.fn.exepath("basedpyright")
+				end
+				if bin == "" then
+					return false
+				end
+				-- user install: ~/.local/lib/pythonX.Y/site-packages/basedpyright
+				local root = vim.fn.fnamemodify(bin, ":h:h")
+				local matches = vim.fn.glob(root .. "/lib/python*/site-packages/basedpyright/__init__.py", true, true)
+				if type(matches) == "table" and #matches > 0 then
+					return true
+				end
+				-- pipx default path
+				local pipx = vim.fn.expand("~/.local/share/pipx/venvs/basedpyright/lib/python*/site-packages/basedpyright/__init__.py")
+				matches = vim.fn.glob(pipx, true, true)
+				return type(matches) == "table" and #matches > 0
+			end
+
+			local enable = {}
+			if has_bin("lua-language-server") then
+				enable[#enable + 1] = "lua_ls"
+			end
+			if basedpyright_ok() then
+				enable[#enable + 1] = "basedpyright"
+			end
+			-- Intentionally skip a noisy notify on every open when the stub is broken;
+			-- reinstall with: pipx install basedpyright  (or pip install --user basedpyright)
+			if has_bin("typescript-language-server") then
+				enable[#enable + 1] = "ts_ls"
+			end
+			if has_bin("sql-language-server") then
+				enable[#enable + 1] = "sqlls"
+			end
+			if has_bin("docker-langserver") then
+				enable[#enable + 1] = "dockerls"
+			end
+			if #enable > 0 then
+				vim.lsp.enable(enable)
+			end
 		end,
 	},
 }
