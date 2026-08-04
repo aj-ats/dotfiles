@@ -101,25 +101,7 @@ vim.keymap.set("x", "lc", function()
 	vim.notify(string.format("%d:%d", lines, chars), vim.log.levels.INFO)
 end, { desc = "Selection line:char count", silent = true })
 
--- Telescope: lazy-loaded via keys — do NOT require('telescope.builtin') at startup.
-vim.keymap.set("n", "<leader>ff", function()
-	require("telescope.builtin").find_files()
-end, { desc = "Telescope find files" })
-vim.keymap.set("n", "<leader>fg", function()
-	require("telescope.builtin").live_grep()
-end, { desc = "Telescope live grep" })
-vim.keymap.set("n", "<leader>fb", function()
-	require("telescope.builtin").buffers()
-end, { desc = "Telescope buffers" })
-vim.keymap.set("n", "<leader>fh", function()
-	require("telescope.builtin").help_tags()
-end, { desc = "Telescope help tags" })
-vim.keymap.set("n", "<leader>fn", function()
-	require("telescope.builtin").find_files({
-		no_ignore = true,
-		hidden = true,
-	})
-end, { desc = "Find all files in a dir" })
+-- Telescope keymaps live in lua/plugins/telescope.lua (lazy keys with real rhs).
 
 -- On quit: force-stop language servers so :q! / QQ don't hang waiting for them.
 vim.api.nvim_create_autocmd("VimLeavePre", {

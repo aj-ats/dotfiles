@@ -7,7 +7,7 @@ case $- in
     *i*) ;;
       *) return;;
 esac
-cursor_style_full_block_blinking=6 # hardware cursor (blinking)
+# cursor_style_full_block_blinking=6 # hardware cursor (blinking)
 # don't put duplicate lines or lines starting with space in the history.
 # See bash(1) for more options
 HISTCONTROL=ignoreboth
@@ -158,6 +158,7 @@ alias nv="./squashfs-root/usr/bin/nvim"
 
 if [ -f ~/.bash_aliases ]; then
     source ~/.bash_aliases
+fi
 # enable programmable completion features (you don't need to enable
 # this, if it's already enabled in /etc/bash.bashrc and /etc/profile
 # sources /etc/bash.bashrc).
@@ -211,7 +212,7 @@ unset __conda_setup
 # <<< conda initialize <<<
 
 export PATH="$PATH:/opt/mssql-tools18/bin"
-setterm -blinking on
+setterm -blink on
 
 export PATH="$PATH:/home/andowens/.foundry/bin"
 
