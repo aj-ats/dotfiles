@@ -2,14 +2,46 @@ return {
 	"nvim-telescope/telescope.nvim",
 	tag = "0.1.8",
 	cmd = "Telescope",
-	-- Keys defined in config/lazy.lua use require() so they also lazy-load.
-	-- Listing them here keeps lazy.nvim aware of the bindings for :Lazy.
+	-- rhs required: desc-only keys get deleted by lazy after first load and never restored.
 	keys = {
-		{ "<leader>ff", desc = "Telescope find files" },
-		{ "<leader>fg", desc = "Telescope live grep" },
-		{ "<leader>fb", desc = "Telescope buffers" },
-		{ "<leader>fh", desc = "Telescope help tags" },
-		{ "<leader>fn", desc = "Find all files in a dir" },
+		{
+			"<leader>ff",
+			function()
+				require("telescope.builtin").find_files()
+			end,
+			desc = "Telescope find files",
+		},
+		{
+			"<leader>fg",
+			function()
+				require("telescope.builtin").live_grep()
+			end,
+			desc = "Telescope live grep",
+		},
+		{
+			"<leader>fb",
+			function()
+				require("telescope.builtin").buffers()
+			end,
+			desc = "Telescope buffers",
+		},
+		{
+			"<leader>fh",
+			function()
+				require("telescope.builtin").help_tags()
+			end,
+			desc = "Telescope help tags",
+		},
+		{
+			"<leader>fn",
+			function()
+				require("telescope.builtin").find_files({
+					no_ignore = true,
+					hidden = true,
+				})
+			end,
+			desc = "Find all files in a dir",
+		},
 	},
 	dependencies = {
 		"nvim-lua/plenary.nvim",
