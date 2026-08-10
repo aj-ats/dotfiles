@@ -1,15 +1,18 @@
--- nvim-treesitter (master branch — frozen but still the supported API for Nvim 0.10/0.11).
--- Do NOT lazy-load; do NOT call a second require("lazy").setup.
+-- nvim-treesitter `main` is required for Neovim 0.12+.
+-- `master` / v0.10.x are frozen and cause highlighter "range" nil errors on 0.12.
 return {
 	"nvim-treesitter/nvim-treesitter",
-	branch = "master",
+	branch = "main",
 	lazy = false,
 	build = ":TSUpdate",
-	-- Module that actually accepts ensure_installed / highlight opts
-	main = "nvim-treesitter.configs",
-	opts = {
-		-- Core nvim + languages you actually use (py / js-ts-vue / sql / shell / etc.)
-		ensure_installed = {
+	config = function()
+		local ts = require("nvim-treesitter")
+
+		ts.setup({
+			install_dir = vim.fn.stdpath("data") .. "/site",
+		})
+
+		local langs = {
 			"bash",
 			"c",
 			"css",
@@ -23,7 +26,6 @@ return {
 			"javascript",
 			"jsdoc",
 			"json",
-			"jsonc",
 			"lua",
 			"luadoc",
 			"luap",
@@ -40,46 +42,44 @@ return {
 			"vimdoc",
 			"vue",
 			"yaml",
-		},
-		sync_install = false,
-		-- ensure_installed already covers your stack; auto_install on every
-		-- unknown ft can stall open (network + compile) under WSL.
-		auto_install = false,
-		highlight = {
-			enable = true,
-			-- Skip treesitter on huge files (keeps nvim snappy on dumps / minified bundles)
-			disable = function(_, buf)
-				local max_filesize = 200 * 1024 -- 200 KB
-				local ok, stats = pcall(vim.uv.fs_stat, vim.api.nvim_buf_get_name(buf))
-				if ok and stats and stats.size > max_filesize then
-					return true
+		}
+
+		-- Async install (no-op if already present). Re-run :TSUpdate after upgrades.
+		ts.install(langs)
+
+		local max_filesize = 200 * 1024 -- 200 KB
+
+		local no_indent = {
+			python = true,
+			yaml = true,
+		}
+
+		vim.api.nvim_create_autocmd("FileType", {
+			group = vim.api.nvim_create_augroup("UserTreesitter", { clear = true }),
+			callback = function(ev)
+				local buf = ev.buf
+				local ft = ev.match
+
+				local ok_stat, stats = pcall(vim.uv.fs_stat, vim.api.nvim_buf_get_name(buf))
+				if ok_stat and stats and stats.size > max_filesize then
+					return
+				end
+
+				-- Highlight / injections (Neovim built-in)
+				pcall(vim.treesitter.start, buf)
+
+				-- Folds
+				vim.wo.foldmethod = "expr"
+				vim.wo.foldexpr = "v:lua.vim.treesitter.foldexpr()"
+				vim.wo.foldlevel = 99
+				vim.opt.foldlevelstart = 99
+				vim.opt.foldenable = true
+
+				-- Indent (plugin; experimental — skip flaky fts)
+				if not no_indent[ft] then
+					vim.bo[buf].indentexpr = "v:lua.require'nvim-treesitter'.indentexpr()"
 				end
 			end,
-			additional_vim_regex_highlighting = false,
-		},
-		indent = {
-			enable = true,
-			-- vue / python indent via treesitter is still flaky for some people
-			disable = { "python", "yaml" },
-		},
-		incremental_selection = {
-			enable = true,
-			keymaps = {
-				init_selection = "<leader>ss",
-				node_incremental = "<leader>si",
-				scope_incremental = "<leader>sc",
-				node_decremental = "<leader>sd",
-			},
-		},
-	},
-	config = function(_, opts)
-		require("nvim-treesitter.configs").setup(opts)
-
-		-- Treesitter-based folds (closed by default; use zc/zo/za)
-		vim.opt.foldmethod = "expr"
-		vim.opt.foldexpr = "v:lua.vim.treesitter.foldexpr()"
-		vim.opt.foldlevel = 99
-		vim.opt.foldlevelstart = 99
-		vim.opt.foldenable = true
+		})
 	end,
 }
