@@ -1,6 +1,9 @@
+-- Use master, not tag 0.1.8 / 0.1.x.
+-- 0.1.x still calls nvim-treesitter.parsers.ft_to_lang (removed on treesitter main),
+-- which breaks previews on Neovim 0.12+ — see telescope#3487.
 return {
 	"nvim-telescope/telescope.nvim",
-	tag = "0.1.8",
+	branch = "master",
 	cmd = "Telescope",
 	-- rhs required: desc-only keys get deleted by lazy after first load and never restored.
 	keys = {
