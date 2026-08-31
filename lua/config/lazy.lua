@@ -79,6 +79,10 @@ vim.keymap.set("n", "QQ", function()
 end, { noremap = true, silent = true, desc = "Force quit (stop LSPs first)" })
 -- U = redo
 vim.api.nvim_set_keymap("n", "U", "<C-r>", { noremap = true, silent = true })
+-- X = visual block (Ctrl-V is often paste on Windows/WSL terminals).
+-- Map in normal AND visual: after V-select, X switches to block (else X deletes).
+-- https://stackoverflow.com/a/63900620
+vim.keymap.set({ "n", "x" }, "X", "<C-v>", { noremap = true, silent = true, desc = "Visual block mode" })
 
 -- jq keymaps (requires jq on PATH)
 vim.api.nvim_set_keymap("v", "jq", ":%!jq .<CR>", { noremap = true, silent = true })

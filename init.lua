@@ -1,6 +1,8 @@
 -- Begin init.lua
 -- leader
---vim.opt.number = true
+-- Absolute line numbers live in their own column, to the right of the sign gutter.
+-- Signs are NOT line numbers: gitsigns uses "?" for untracked lines; LSP uses E/W/H.
+vim.opt.number = true
 --tabs
 vim.opt.tabstop = 8
 vim.opt.shiftwidth = 2
