@@ -257,15 +257,10 @@ return {
 					".git",
 				},
 			})
-			vim.lsp.config("sqlls", {
-				cmd = { "sql-language-server", "up", "--method", "stdio" },
-				filetypes = { "sql", "mysql", "tsql" },
-				root_markers = { ".sqllsrc.json" },
-			})
-
+			-- T-SQL / SQL Server LSP is mssql.nvim (Microsoft SqlToolsService as mssql_ls).
 			vim.filetype.add({
 				extension = {
-					tsql = "tsql",
+					tsql = "sql",
 				},
 			})
 
@@ -311,9 +306,6 @@ return {
 			-- reinstall with: pipx install basedpyright  (or pip install --user basedpyright)
 			if has_bin("typescript-language-server") then
 				enable[#enable + 1] = "ts_ls"
-			end
-			if has_bin("sql-language-server") then
-				enable[#enable + 1] = "sqlls"
 			end
 			if has_bin("docker-langserver") then
 				enable[#enable + 1] = "dockerls"
