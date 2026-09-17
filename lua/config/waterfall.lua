@@ -72,6 +72,10 @@ local function set_hls()
 	h(0, "WaterfallMoss", { fg = "#73daca" })
 	h(0, "WaterfallMossDark", { fg = "#3d7a80" })
 	h(0, "WaterfallHint", { fg = "#565f89", italic = true })
+	h(0, "WaterfallMtFar", { fg = "#3b4261" })
+	h(0, "WaterfallMtEdge", { fg = "#565f89" })
+	h(0, "WaterfallSnow", { fg = "#c0caf5" })
+	h(0, "WaterfallSnowDim", { fg = "#a9b1d6" })
 	h(0, "WaterfallLogo", { fg = "#9ece6a", bold = true })
 	h(0, "WaterfallLogoDim", { fg = "#73daca" })
 	h(0, "WaterfallLogoBright", { fg = "#c0caf5", bold = true })
@@ -180,6 +184,84 @@ local function sheet_wave(y, tick)
 	local wave = math.sin(phase) * 2.8 + math.sin(y * 0.06 - tick * 0.10 + 1.05) * 1.4
 	local lean = math.cos(phase)
 	return wave, lean
+end
+
+-- ASCII triangle peak. Spaces are left alone so farther ranges show through.
+local function draw_peak(grid, hl, width, height, px, peak_y, base_y, half_w, snow_h, far, tick)
+	px = math.floor(px + 0.5)
+	peak_y = math.max(1, math.floor(peak_y))
+	base_y = math.floor(base_y)
+	half_w = math.max(3, half_w)
+	if peak_y >= base_y then
+		return
+	end
+	local edge_hl = far and "WaterfallMtFar" or "WaterfallMtEdge"
+	local snow_hl = far and "WaterfallSnowDim" or "WaterfallSnow"
+	local last = math.min(base_y, height - 1)
+
+	for y = peak_y, last do
+		local t = (y - peak_y) / (base_y - peak_y)
+		local half = (y == peak_y) and 0.5 or (t * half_w)
+		local l = math.floor(px - half)
+		local r = math.floor(px + half)
+		if r <= l then
+			r = l + 1
+		end
+		for x = l, r do
+			local from_top = y - peak_y
+			local ch, group
+			if x == l then
+				ch, group = "/", edge_hl
+			elseif x == r then
+				ch, group = "\\", edge_hl
+			elseif from_top <= snow_h then
+				local spark = ((x + math.floor(tick / 5)) % 6 == 0)
+				if spark then
+					ch, group = "*", snow_hl
+				elseif from_top == 0 then
+					ch, group = "^", snow_hl
+				else
+					ch, group = (far and "·" or "^"), snow_hl
+				end
+			end
+			-- interior stays empty so overlapping peaks read as a clean range
+			if ch then
+				put(grid, hl, width, height, x, y, ch, group)
+			end
+		end
+	end
+end
+
+local function draw_mountains(grid, hl, width, height, g, tick)
+	local base = g.ledge_y
+	local span = math.max(3, base - 1)
+	-- { center x as fraction of width, height 0-1 of sky, half-width fraction }
+	-- Stay off the center so the NEOVIM mark sits in a valley.
+	local far = {
+		{ 0.05, 0.48, 0.08 },
+		{ 0.13, 0.64, 0.09 },
+		{ 0.88, 0.60, 0.09 },
+		{ 0.97, 0.42, 0.07 },
+	}
+	local near = {
+		{ 0.05, 1.00, 0.13 },
+		{ 0.14, 0.78, 0.09 },
+		{ 0.87, 0.76, 0.09 },
+		{ 0.96, 1.00, 0.13 },
+	}
+
+	local function place(peaks, is_far)
+		for _, p in ipairs(peaks) do
+			local px = p[1] * width
+			local peak_y = base - math.floor(p[2] * span)
+			local half_w = p[3] * width
+			local snow_h = is_far and 1 or math.max(1, math.floor((base - math.max(1, peak_y)) * 0.30))
+			draw_peak(grid, hl, width, height, px, peak_y, base, half_w, snow_h, is_far, tick)
+		end
+	end
+
+	place(far, true)
+	place(near, false)
 end
 
 local function draw_mist(grid, hl, width, height, g, tick)
@@ -410,6 +492,7 @@ end
 local function render_frame(width, height, tick)
 	local grid, hl = make_grid(width, height)
 	local g = geometry(width, height)
+	draw_mountains(grid, hl, width, height, g, tick)
 	draw_mist(grid, hl, width, height, g, tick)
 	draw_logo(grid, hl, width, height, g, tick)
 	draw_cliffs(grid, hl, width, height, g)
