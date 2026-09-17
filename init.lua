@@ -13,6 +13,7 @@ vim.opt.signcolumn = "yes:2"
 --
 require("config.lazy")
 require("config.cursor").setup()
+require("config.waterfall").setup()
 -- yank to windows clipboard from wsl
 --xnoremap y y:!clip.exe<CR>
 -- mouse mode off
